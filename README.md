@@ -2,8 +2,6 @@
 
 "Your AI writes the code. These three tools tell you whether to trust it."
 
-![MikeVan's AI Development Toolkit in action: checkpoint, check, untangle, check again]
-
 MikeVan's AI Development Toolkit is one install that puts KeepSafe, DeepTest, and UntangleIt in your editor together. KeepSafe is the undo button. DeepTest is the inspector. UntangleIt is the fixer. You make every decision; the tools measure, remember, untangle, and report.
 
 ### Why the Toolkit
@@ -86,7 +84,7 @@ MBCC charges a chain of `and`/`or` one per operand when the order of the operand
 
 ## Languages
 
-TypeScript and JavaScript (Jest or Vitest) and Python (pytest). Java, C#, and C++ are next, then PHP or Go.
+TypeScript and JavaScript (Jest or Vitest) and Python (pytest) as of 1.0. Next, one minor number per language across the whole toolkit: Java (1.1), C# (1.2), C++ (1.3), then Go or PHP (1.4). JavaScript frameworks that allow testing (React, Vue, Angular, and their runners) are runner work inside the existing plugin and ship as patches. The plan and what each language must have before it ships are in ROADMAP.md.
 
 ---
 
