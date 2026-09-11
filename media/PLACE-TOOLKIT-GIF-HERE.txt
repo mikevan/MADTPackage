@@ -1,0 +1,1 @@
+Drop toolkit.gif here. The README references media/toolkit.gif between the headline and the opening paragraph.
