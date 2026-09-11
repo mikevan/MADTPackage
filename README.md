@@ -2,7 +2,7 @@
 
 "Your AI writes the code. These three tools tell you whether to trust it."
 
-![MikeVan's AI Development Toolkit in action: checkpoint, check, untangle, check again](media/toolkit.gif)
+![MikeVan's AI Development Toolkit in action: checkpoint, check, untangle, check again]
 
 MikeVan's AI Development Toolkit is one install that puts KeepSafe, DeepTest, and RefactorIt in your editor together. KeepSafe is the undo button. DeepTest is the inspector. RefactorIt is the fixer. You make every decision; the tools measure, remember, untangle, and report.
 
@@ -36,17 +36,17 @@ Your assistant can produce a thousand lines before lunch. The Toolkit tells you 
 
 ## The Tools
 
+<img src="media/keepsafeLogo.png" alt="KeepSafe" width="96">
 **KeepSafe** remembers and restores. One-click checkpoints of the whole workspace before your assistant touches it, fast restore of thousands of files at once, and diffs between any two checkpoints. Git protects your project history; KeepSafe protects you from the last prompt.
 
-![KeepSafe: Quick Checkpoint, Create Checkpoint, List Checkpoints, Recovery, Maintenance](media/keepsafe.png)
-
+<br clear="all">
+<img src="media/deeptestLogo.png" alt="DeepTest" width="96">
 **DeepTest** measures and judges. It runs your tests, then reports in plain words which lines no test has ever reached, how many tests each line needs given the decisions guarding it, and which functions are harder to test than your limit. Every shortfall is a card with three choices: Fix this, Accept as it is, or Leave for now. DeepTest never fixes anything itself and never accepts a fix on your behalf.
 
-![DeepTest: the verdict, in plain words, first](media/deeptest.png)
-
+<br clear="all">
+<img src="media/refactoritLogo.png" alt="RefactorIt" width="96">
 **RefactorIt** untangles. Point it at the function DeepTest flagged and it splits that function into pieces that do exactly the same thing, each within your limit. Then it runs your tests and measures every piece again. An assistant that says "done" is not evidence; the numbers are.
-
-![RefactorIt: 14 methods are too tangled; the worst is visit() with 23](media/refactorit.png)
+<br clear="all">
 
 ### How They Work Together
 
