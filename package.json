@@ -2,14 +2,14 @@
   "name": "MADTPackage",
   "displayName": "MikeVan's AI Development Toolkit",
   "description": "Know whether your AI-written code is good, whether it is being changed without your knowledge, and what to do about it. Installs KeepSafe, DeepTest, and UntangleIt together.",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "publisher": "prs",
   "license": "GPL-3.0-only",
   "icon": "media/MADTPackageLogo.png",
   "homepage": "https://projectrevivesolutions.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mikevan/toolkit.git"
+    "url": "https://github.com/mikevan/MADTPackage.git"
   },
   "engines": {
     "vscode": "^1.104.0"
