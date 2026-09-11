@@ -1,8 +1,8 @@
 {
   "name": "MADTPackage",
   "displayName": "MikeVan's AI Development Toolkit",
-  "description": "Know whether your AI-written code is good, whether it is being changed without your knowledge, and what to do about it. Installs KeepSafe, DeepTest, and RefactorIt together.",
-  "version": "0.1.4",
+  "description": "Know whether your AI-written code is good, whether it is being changed without your knowledge, and what to do about it. Installs KeepSafe, DeepTest, and UntangleIt together.",
+  "version": "0.1.5",
   "publisher": "prs",
   "license": "GPL-3.0-only",
   "icon": "media/MADTPackageLogo.png",
@@ -32,7 +32,7 @@
   "extensionPack": [
     "KeepSafe.keepsafe",
     "prs.deeptest",
-    "prs.refactorit"
+    "prs.untangleit"
   ],
   "scripts": {
     "package": "npx @vscode/vsce package"

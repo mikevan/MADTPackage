@@ -4,15 +4,15 @@
 
 ![MikeVan's AI Development Toolkit in action: checkpoint, check, untangle, check again]
 
-MikeVan's AI Development Toolkit is one install that puts KeepSafe, DeepTest, and RefactorIt in your editor together. KeepSafe is the undo button. DeepTest is the inspector. RefactorIt is the fixer. You make every decision; the tools measure, remember, untangle, and report.
+MikeVan's AI Development Toolkit is one install that puts KeepSafe, DeepTest, and UntangleIt in your editor together. KeepSafe is the undo button. DeepTest is the inspector. UntangleIt is the fixer. You make every decision; the tools measure, remember, untangle, and report.
 
 ### Why the Toolkit
 
-- **One install, three tools**: KeepSafe, DeepTest, and RefactorIt arrive together and work together.
+- **One install, three tools**: KeepSafe, DeepTest, and UntangleIt arrive together and work together.
 - **Plain words first**: Every screen is written for someone who does not read code line by line. The engineer's numbers sit behind one switch.
 - **You decide, always**: No tool changes your code on its own, and no tool accepts an AI's result on your behalf.
 - **Undo built in**: Before any tool hands work to your AI assistant, it offers a KeepSafe checkpoint.
-- **Your own tests, your own runtime**: DeepTest and RefactorIt run the test runner your project already has. Nothing extra to install.
+- **Your own tests, your own runtime**: DeepTest and UntangleIt run the test runner your project already has. Nothing extra to install.
 - **100% local**: Checkpoints, decisions, and results stay in your workspace.
 
 ### The Toolkit + Your AI Assistant: Partners in Protection
@@ -29,7 +29,7 @@ Your assistant can produce a thousand lines before lunch. The Toolkit tells you 
 
 1. Install MikeVan's AI Development Toolkit from the VS Code Marketplace.
 2. Open the DeepTest panel and select Check my code.
-3. Read the verdict. On the hardest function, select Fix this, choose Break it into smaller pieces, take the KeepSafe checkpoint when offered, and let RefactorIt untangle it.
+3. Read the verdict. On the hardest function, select Fix this, choose Break it into smaller pieces, take the KeepSafe checkpoint when offered, and let UntangleIt untangle it.
 4. Select Check my code again. Keep the result, or restore the checkpoint.
 
 ---
@@ -44,13 +44,13 @@ Your assistant can produce a thousand lines before lunch. The Toolkit tells you 
 **DeepTest** measures and judges. It runs your tests, then reports in plain words which lines no test has ever reached, how many tests each line needs given the decisions guarding it, and which functions are harder to test than your limit. Every shortfall is a card with three choices: Fix this, Accept as it is, or Leave for now. DeepTest never fixes anything itself and never accepts a fix on your behalf.
 
 <br clear="all">
-<img src="media/refactoritLogo.png" alt="RefactorIt" width="96">
-**RefactorIt** untangles. Point it at the function DeepTest flagged and it splits that function into pieces that do exactly the same thing, each within your limit. Then it runs your tests and measures every piece again. An assistant that says "done" is not evidence; the numbers are.
+<img src="media/untangleitLogo.png" alt="UntangleIt" width="96">
+**UntangleIt** untangles. Point it at the function DeepTest flagged and it splits that function into pieces that do exactly the same thing, each within your limit. Then it runs your tests and measures every piece again. An assistant that says "done" is not evidence; the numbers are.
 <br clear="all">
 
 ### How They Work Together
 
-- DeepTest's "Break it into smaller pieces" hands the job to RefactorIt when RefactorIt is installed.
+- DeepTest's "Break it into smaller pieces" hands the job to UntangleIt when UntangleIt is installed.
 - Both offer a KeepSafe checkpoint before any hand-off, and the restore afterwards.
 - Every tool is a separate extension. Uninstall one and the others keep working; they recommend the missing one once, on their setup screen, and never nag.
 
@@ -77,10 +77,10 @@ MBCC charges a chain of `and`/`or` one per operand when the order of the operand
 | **Diff Checkpoints** | KeepSafe | Display changes between two checkpoints |
 | **Check my code** | DeepTest | Run the tests and report the verdict |
 | **Tell me where the tests are** | DeepTest | Open the setup screen |
-| **Find the tangled methods** | RefactorIt | Measure every method and list the ones over your limit |
-| **Untangle this method** | RefactorIt | Untangle one method, with the gates |
-| **Untangle the most tangled method** | RefactorIt | Untangle the worst method in the workspace |
-| **Measure the method again** | RefactorIt | Re-measure after your assistant's work |
+| **Find the tangled methods** | UntangleIt | Measure every method and list the ones over your limit |
+| **Untangle this method** | UntangleIt | Untangle one method, with the gates |
+| **Untangle the most tangled method** | UntangleIt | Untangle the worst method in the workspace |
+| **Measure the method again** | UntangleIt | Re-measure after your assistant's work |
 
 ---
 
