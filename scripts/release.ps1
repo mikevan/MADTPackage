@@ -7,6 +7,11 @@
   both extensions bundle its dist), and stops at the first failure so a half-aligned
   toolkit never gets committed.
 
+  First the library: every document under MADTPackage\library is copied to its
+  mirrors in the tool trees (the table $mirrors below), and every mirror is then
+  checked against the library byte for byte. A document is edited in the library
+  and nowhere else; see library\README.md.
+
   Per tree: set the version, run the tests, build, package (extensions only),
   install the VSIX locally, then, if -Commit, commit and push, and, if -Tag, tag.
 
@@ -74,6 +79,27 @@ $trees = @(
   @{ Name = 'MADTPackage'; Path = "$root\MADTPackage"; Branch = 'main';   Kind = 'pack';      PackageArgs = @() }
 )
 
+# The library and its mirrors. Source on the left, under MADTPackage\library;
+# every copy it feeds on the right. A tool carries the documents it needs to be
+# read on its own; the library is where they are written.
+$library = "$root\MADTPackage\library"
+$mirrors = @(
+  @{ From = 'toolkit\toolkit-roadmap.md';               To = @("$root\MADTPackage\ROADMAP.md", "$root\DeepTest\docs\toolkit\toolkit-roadmap.md", "$root\UntangleIt\docs\toolkit\toolkit-roadmap.md", "$root\complexity\docs\toolkit-roadmap.md") },
+  @{ From = 'toolkit\toolkit-architecture.md';          To = @("$root\DeepTest\docs\toolkit\toolkit-architecture.md", "$root\UntangleIt\docs\toolkit\toolkit-architecture.md") },
+  @{ From = 'toolkit\toolkit-api.md';                   To = @("$root\DeepTest\docs\toolkit\toolkit-api.md", "$root\UntangleIt\docs\toolkit\toolkit-api.md") },
+  @{ From = 'toolkit\plan-1.0-javascript-frameworks.md'; To = @("$root\DeepTest\docs\toolkit\plan-1.0-javascript-frameworks.md", "$root\UntangleIt\docs\toolkit\plan-1.0-javascript-frameworks.md") },
+  @{ From = 'toolkit\mbcc-why-and-how.md';              To = @("$root\DeepTest\docs\toolkit\mbcc-why-and-how.md", "$root\UntangleIt\docs\toolkit\mbcc-why-and-how.md", "$root\complexity\docs\mbcc-why-and-how.md") },
+  @{ From = 'toolkit\untangle-it-spec.md';              To = @("$root\DeepTest\docs\toolkit\untangle-it-spec.md", "$root\UntangleIt\docs\toolkit\untangle-it-spec.md") },
+  @{ From = 'toolkit\witness.md';                       To = @("$root\DeepTest\docs\witness.md", "$root\UntangleIt\docs\witness.md") },
+  @{ From = 'deeptest\build-status.md';                 To = @("$root\DeepTest\docs\build-status.md") },
+  @{ From = 'deeptest\engineering-notes.md';            To = @("$root\DeepTest\docs\engineering-notes.md") },
+  @{ From = 'deeptest\uat.md';                          To = @("$root\DeepTest\docs\uat.md") },
+  @{ From = 'untangleit\build-status.md';               To = @("$root\UntangleIt\docs\build-status.md") },
+  @{ From = 'untangleit\engineering-notes.md';          To = @("$root\UntangleIt\docs\engineering-notes.md") },
+  @{ From = 'untangleit\uat.md';                        To = @("$root\UntangleIt\docs\uat.md") },
+  @{ From = 'complexity\measures.md';                   To = @("$root\complexity\docs\measures.md") }
+)
+
 function Step {
   param([string] $What, [scriptblock] $Do)
   Write-Host ""
@@ -105,6 +131,26 @@ foreach ($t in $trees) {
 Write-Host "Toolkit release $Version" -ForegroundColor Green
 Write-Host "Trees, in order: $($trees.Name -join ', ')"
 Write-Host "Commit: $Commit   Tag: $Tag   Tests: $(-not $SkipTests)   Install: $(-not $NoInstall)"
+
+# ---- Phase 0: the library to its mirrors, then every mirror checked. ----
+Write-Host ""
+Write-Host ">>> library: mirror $($mirrors.Count) documents" -ForegroundColor Cyan
+foreach ($m in $mirrors) {
+  $from = Join-Path $library $m.From
+  if (-not (Test-Path $from)) { throw "Library document missing: $from" }
+  foreach ($to in $m.To) {
+    New-Item -ItemType Directory -Force -Path (Split-Path $to) | Out-Null
+    Copy-Item -Path $from -Destination $to -Force
+  }
+}
+foreach ($m in $mirrors) {
+  $want = (Get-FileHash (Join-Path $library $m.From) -Algorithm SHA256).Hash
+  foreach ($to in $m.To) {
+    $have = (Get-FileHash $to -Algorithm SHA256).Hash
+    if ($have -ne $want) { throw "Mirror differs from the library after copying: $to" }
+  }
+}
+Write-Host "library: every mirror matches." -ForegroundColor Green
 
 # ---- Phase 1: version, test, build, package, install. No git writes. ----
 foreach ($t in $trees) {

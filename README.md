@@ -84,13 +84,19 @@ MBCC charges a chain of `and`/`or` one per operand when the order of the operand
 
 ## Languages
 
-TypeScript and JavaScript (Jest or Vitest) and Python (pytest) as of 1.0. Next, one minor number per language across the whole toolkit: Java (1.1), C# (1.2), C++ (1.3), then Go or PHP (1.4). JavaScript frameworks that allow testing (React, Vue, Angular, and their runners) are runner work inside the existing plugin and ship as patches. The plan and what each language must have before it ships are in ROADMAP.md.
+Python (pytest) and TypeScript and JavaScript on Jest, Vitest, and Mocha, with React, Vue, Svelte, Angular (`ng test` with Vitest or Karma), and Playwright component tests, as of 1.0. Mocha and Playwright are measured by Witness, the toolkit's own instrumentation. Next, one minor number per language across the whole toolkit: Java (1.1), C# (1.2), C++ or Go (1.3). The plan and what each language must have before it ships are in ROADMAP.md.
+
+---
+
+## The library
+
+Every document written for the toolkit, the design, the contracts, the roadmap, the engineering notes, the acceptance scripts, and the articles, lives in `library\` with a catalogue in `library\README.md`. The toolkit is built by Michael Van Geertruy working with Claude, Anthropic's AI model, and every document says so in its byline. The copies of those documents in each tool's `docs\` folder are mirrors the release script refreshes; a document is edited in the library and nowhere else.
 
 ---
 
 ## Requirements
 
-Visual Studio Code 1.104.0 or newer. Docker is needed only if your own test suite needs it.
+Visual Studio Code 1.104.0 or newer, and the project's own runtime and test runner: Python with pytest, or Node with Jest, Vitest, or Mocha (Node 22.15 or later for Mocha), the Angular CLI for Angular projects, and Playwright's browser for component tests. Each tool's README lists what its runner needs and what it offers to install. Docker is needed only if your own test suite needs it.
 
 ---
 
