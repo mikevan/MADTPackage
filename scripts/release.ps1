@@ -3,8 +3,8 @@
   Aligns every repository in MikeVan's AI Development Toolkit on one version, in one go.
 
 .DESCRIPTION
-  Runs the four trees in dependency order (the complexity library first, because
-  both extensions bundle its dist), and stops at the first failure so a half-aligned
+  Runs the five trees in dependency order (the complexity and Witness libraries
+  first, because both extensions bundle their dist), and stops at the first failure so a half-aligned
   toolkit never gets committed.
 
   First the library: every document under MADTPackage\library is copied to its
@@ -50,7 +50,7 @@
 
 .EXAMPLE
   .\release.ps1 -Version 1.0.0 -Commit -Tag -Subject "Toolkit 1.0.0" -BodyFile C:\temp\body.txt
-  The full release: test, build, commit, tag v1.0.0, push, on all four trees.
+  The full release: test, build, commit, tag v1.0.0, push, on all five trees.
 
 .EXAMPLE
   .\release.ps1 -Version 1.0.1 -Commit -Subject "Install button names the interpreter"
@@ -69,11 +69,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$root = 'C:\workspace'
+$root = "C:\workspace\MikeVan's AI Development Toolkit"
 
-# Dependency order. The library first: both extensions bundle its dist.
+# Dependency order. The libraries first: both extensions bundle their dist.
 $trees = @(
   @{ Name = 'complexity';  Path = "$root\complexity";  Branch = 'master'; Kind = 'library';   PackageArgs = @() },
+  @{ Name = 'Witness';     Path = "$root\Witness";     Branch = 'master'; Kind = 'library';   PackageArgs = @() },
   @{ Name = 'UntangleIt';  Path = "$root\UntangleIt";  Branch = 'master'; Kind = 'extension'; PackageArgs = @('--no-dependencies') },
   @{ Name = 'DeepTest';    Path = "$root\DeepTest";    Branch = 'main';   Kind = 'extension'; PackageArgs = @('--no-dependencies') },
   @{ Name = 'MADTPackage'; Path = "$root\MADTPackage"; Branch = 'main';   Kind = 'pack';      PackageArgs = @() }
@@ -90,7 +91,7 @@ $mirrors = @(
   @{ From = 'toolkit\plan-1.0-javascript-frameworks.md'; To = @("$root\DeepTest\docs\toolkit\plan-1.0-javascript-frameworks.md", "$root\UntangleIt\docs\toolkit\plan-1.0-javascript-frameworks.md") },
   @{ From = 'toolkit\mbcc-why-and-how.md';              To = @("$root\DeepTest\docs\toolkit\mbcc-why-and-how.md", "$root\UntangleIt\docs\toolkit\mbcc-why-and-how.md", "$root\complexity\docs\mbcc-why-and-how.md") },
   @{ From = 'toolkit\untangle-it-spec.md';              To = @("$root\DeepTest\docs\toolkit\untangle-it-spec.md", "$root\UntangleIt\docs\toolkit\untangle-it-spec.md") },
-  @{ From = 'toolkit\witness.md';                       To = @("$root\DeepTest\docs\witness.md", "$root\UntangleIt\docs\witness.md") },
+  @{ From = 'toolkit\witness.md';                       To = @("$root\Witness\docs\witness.md", "$root\DeepTest\docs\witness.md", "$root\UntangleIt\docs\witness.md") },
   @{ From = 'deeptest\build-status.md';                 To = @("$root\DeepTest\docs\build-status.md") },
   @{ From = 'deeptest\engineering-notes.md';            To = @("$root\DeepTest\docs\engineering-notes.md") },
   @{ From = 'deeptest\uat.md';                          To = @("$root\DeepTest\docs\uat.md") },
@@ -188,7 +189,40 @@ if (-not $Commit) {
   exit 0
 }
 
-# ---- Phase 2: show the trees, ask once, then commit, tag, push. ----
+# ---- Phase 2: check every branch and remote, show the trees, ask once, then commit, tag, push. ----
+
+# Every branch and every remote is checked before the first git write. This used to sit inside
+# the commit loop, which let an early tree commit and push and then a later
+# tree fail, leaving exactly the half-aligned toolkit this script exists to
+# prevent. symbolic-ref, not rev-parse: on a repository whose first commit has
+# not been made yet, `rev-parse --abbrev-ref HEAD` answers the literal string
+# 'HEAD', so a brand new tree could never pass its own branch check.
+Write-Host ""
+Write-Host ">>> checking every branch and remote before any git write" -ForegroundColor Cyan
+foreach ($t in $trees) {
+  Set-Location $t.Path
+  # No stderr redirection here: under $ErrorActionPreference = 'Stop', PowerShell
+  # can turn a redirected native command's stderr into a terminating error.
+  $current = git symbolic-ref --short HEAD
+  if ($LASTEXITCODE -ne 0 -or -not $current) {
+    throw "$($t.Name): HEAD is not on a branch. Nothing has been committed anywhere."
+  }
+  $current = ($current | Select-Object -First 1).Trim()
+  if ($current -ne $t.Branch) {
+    throw "$($t.Name) is on '$current', expected '$($t.Branch)'. Nothing has been committed anywhere."
+  }
+  # The remote has to answer before the first commit, not when this tree's turn
+  # to push arrives. A repository that was never created fails at push, after
+  # earlier trees have already committed and pushed, which is the half-aligned
+  # toolkit this script exists to prevent. Plain ls-remote, not --exit-code:
+  # a newly created empty repository answers with no refs and that is fine.
+  $null = git ls-remote origin
+  if ($LASTEXITCODE -ne 0) {
+    throw "$($t.Name): its remote did not answer. Create or fix it before releasing. Nothing has been committed anywhere."
+  }
+  Write-Host ("{0,-12} {1}  remote ok" -f $t.Name, $current)
+}
+
 Write-Host ""
 Write-Host "Working trees about to be committed:" -ForegroundColor Yellow
 foreach ($t in $trees) {
@@ -197,7 +231,7 @@ foreach ($t in $trees) {
   git status --short
 }
 if (-not $Yes) {
-  $answer = Read-Host "Commit all four with subject '$Subject'$(if ($Tag) { " and tag v$Version" })? (yes/no)"
+  $answer = Read-Host "Commit all five with subject '$Subject'$(if ($Tag) { " and tag v$Version" })? (yes/no)"
   if ($answer -ne 'yes') {
     Write-Host 'Stopped before any git write.'
     exit 1
@@ -211,8 +245,6 @@ Set-Content -Path $msgFile -Value $lines
 
 foreach ($t in $trees) {
   Set-Location $t.Path
-  $current = (git rev-parse --abbrev-ref HEAD).Trim()
-  if ($current -ne $t.Branch) { throw "$($t.Name) is on '$current', expected '$($t.Branch)'. Nothing committed here." }
   Step "$($t.Name): git add -A" { git add -A }
   $staged = git diff --cached --name-only
   if (-not $staged) {

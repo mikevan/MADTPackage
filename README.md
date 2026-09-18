@@ -84,7 +84,7 @@ MBCC charges a chain of `and`/`or` one per operand when the order of the operand
 
 ## Languages
 
-Python (pytest) and TypeScript and JavaScript on Jest, Vitest, and Mocha, with React, Vue, Svelte, Angular (`ng test` with Vitest or Karma), and Playwright component tests, as of 1.0. Mocha and Playwright are measured by Witness, the toolkit's own instrumentation. Next, one minor number per language across the whole toolkit: Java (1.1), C# (1.2), C++ or Go (1.3). The plan and what each language must have before it ships are in ROADMAP.md.
+Python (pytest) and TypeScript and JavaScript on Jest, Vitest, and Mocha, with React, Vue, Svelte, Angular (`ng test` with Vitest or Karma), and Playwright component tests, as of 1.0. Mocha and Playwright are measured by Witness, the toolkit's own instrumentation, a library (`@projectrevivesolutions/witness`) both tools bundle. Next, one minor number per language across the whole toolkit: Java (1.1), C# (1.2), C++ or Go (1.3). The plan and what each language must have before it ships are in ROADMAP.md.
 
 ---
 
