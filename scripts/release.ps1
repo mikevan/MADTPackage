@@ -157,12 +157,6 @@ Write-Host "library: every mirror matches." -ForegroundColor Green
 foreach ($t in $trees) {
   Set-Location $t.Path
   Step "$($t.Name): set version $Version" { npm version $Version --no-git-tag-version --allow-same-version | Out-Null }
-  if ($t.Name -eq 'UntangleIt') {
-    # The panel title carries the version in package.json's view name.
-    $pkg = Get-Content package.json -Raw
-    $pkg = [regex]::Replace($pkg, '"name": "UntangleIt \d+\.\d+\.\d+"', "`"name`": `"UntangleIt $Version`"")
-    Set-Content -Path package.json -Value $pkg -NoNewline
-  }
   if ($t.Kind -ne 'pack') {
     if (-not $SkipTests) {
       Step "$($t.Name): npm test" { npm test }

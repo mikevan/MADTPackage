@@ -1,4 +1,4 @@
-# MikeVan's AI Development Toolkit
+# MikeVan's AI Development Toolkit - Polyglot
 
 "Your AI writes the code. These three tools tell you whether to trust it."
 

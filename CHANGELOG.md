@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.10
+
+The 1.x series is named Polyglot and the pack carries it: the Marketplace title
+reads `MikeVan's AI Development Toolkit - Polyglot`. The roadmap now names both
+series and says why 1.x has this one, since the only thing that moves the minor
+number is a new language. The release script loses the UntangleIt title regex,
+which the build has done for several versions and which the rename would have
+broken silently.
+
 ## 1.0.9
 
 Witness is its own library, `@projectrevivesolutions/witness`, the second the toolkit shares beside `@projectrevivesolutions/complexity`, and the fifth tree the release script aligns. DeepTest bundles it; UntangleIt declares it for the behaviour gate to come. Every toolkit document lives in `library\` with the byline naming Claude, and the release script mirrors and verifies the copies. The trees now live under `C:\workspace\MikeVan's AI Development Toolkit\`.
