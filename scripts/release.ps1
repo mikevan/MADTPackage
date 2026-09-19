@@ -20,7 +20,11 @@
   first git write, unless -Yes.
 
 .PARAMETER Version
-  The version to set everywhere, e.g. 1.0.0 or 1.1.0. Required.
+  The version to set everywhere, e.g. 1.0.0 or 1.1.0. Required with -Commit and
+  not allowed without it. A version number means a commit exists in the
+  repository carrying it, so the number moves in the same run that commits the
+  code and never in a verification run. Without -Version the trees build at
+  whatever their package.json already says, which is the last released number.
 
 .PARAMETER Subject
   The commit subject, one line. Required with -Commit.
@@ -45,8 +49,10 @@
   Do not ask before git writes.
 
 .EXAMPLE
-  .\release.ps1 -Version 1.0.0
-  Build, test, package, and install everything at 1.0.0. No git writes.
+  .\release.ps1
+  Build, test, package, and install every tree at the version it already carries.
+  No number changes and nothing is committed. This is the run you verify on the
+  device before releasing.
 
 .EXAMPLE
   .\release.ps1 -Version 1.0.0 -Commit -Tag -Subject "Toolkit 1.0.0" -BodyFile C:\temp\body.txt
@@ -58,7 +64,7 @@
 #>
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true)] [ValidatePattern('^\d+\.\d+\.\d+$')] [string] $Version,
+  [ValidatePattern('^\d+\.\d+\.\d+$')] [string] $Version,
   [string] $Subject,
   [string] $BodyFile,
   [switch] $Commit,
@@ -114,6 +120,14 @@ function Step {
 if ($Commit -and -not $Subject) {
   throw 'Pass -Subject with -Commit.'
 }
+# A version number means a commit exists carrying it. So the bump happens in the
+# run that commits, never in a verification run that may be thrown away.
+if ($Commit -and -not $Version) {
+  throw 'Pass -Version with -Commit. The number moves only when the code is checked in.'
+}
+if ($Version -and -not $Commit) {
+  throw 'Drop -Version, or add -Commit. A verification run builds at the version already in package.json, so a number is never set without a commit behind it.'
+}
 if ($Tag -and -not $Commit) {
   throw '-Tag needs -Commit.'
 }
@@ -129,7 +143,7 @@ foreach ($t in $trees) {
   }
 }
 
-Write-Host "Toolkit release $Version" -ForegroundColor Green
+Write-Host $(if ($Version) { "Toolkit release $Version" } else { 'Toolkit verification build (no version change)' }) -ForegroundColor Green
 Write-Host "Trees, in order: $($trees.Name -join ', ')"
 Write-Host "Commit: $Commit   Tag: $Tag   Tests: $(-not $SkipTests)   Install: $(-not $NoInstall)"
 
@@ -156,7 +170,10 @@ Write-Host "library: every mirror matches." -ForegroundColor Green
 # ---- Phase 1: version, test, build, package, install. No git writes. ----
 foreach ($t in $trees) {
   Set-Location $t.Path
-  Step "$($t.Name): set version $Version" { npm version $Version --no-git-tag-version --allow-same-version | Out-Null }
+  if ($Version) {
+    Step "$($t.Name): set version $Version" { npm version $Version --no-git-tag-version --allow-same-version | Out-Null }
+  }
+  $treeVersion = (Get-Content (Join-Path $t.Path 'package.json') -Raw | ConvertFrom-Json).version
   if ($t.Kind -ne 'pack') {
     if (-not $SkipTests) {
       Step "$($t.Name): npm test" { npm test }
@@ -168,7 +185,7 @@ foreach ($t in $trees) {
     Step "$($t.Name): package" { npx @vscode/vsce package @($t.PackageArgs) }
     $vsix = Get-ChildItem (Join-Path $t.Path '*.vsix') | Select-Object -First 1
     if (-not $vsix) { throw "$($t.Name): no VSIX was produced." }
-    if ($vsix.Name -notmatch [regex]::Escape($Version)) { throw "$($t.Name): VSIX is $($vsix.Name), not version $Version." }
+    if ($vsix.Name -notmatch [regex]::Escape($treeVersion)) { throw "$($t.Name): VSIX is $($vsix.Name), not version $treeVersion." }
     if (-not $NoInstall) {
       Step "$($t.Name): install $($vsix.Name)" { code --install-extension $vsix.FullName --force }
     }
@@ -176,10 +193,10 @@ foreach ($t in $trees) {
 }
 
 Write-Host ""
-Write-Host "Phase 1 green: every tree is at $Version, tested, built, and packaged." -ForegroundColor Green
+Write-Host $(if ($Version) { "Phase 1 green: every tree is at $Version, tested, built, and packaged." } else { "Phase 1 green: every tree built, tested, and packaged at its current version. No number was changed." }) -ForegroundColor Green
 
 if (-not $Commit) {
-  Write-Host "No git writes requested (pass -Commit to commit and push, -Tag to tag)."
+  Write-Host "No git writes requested, and no version was set. Pass -Commit with -Version to release."
   exit 0
 }
 
