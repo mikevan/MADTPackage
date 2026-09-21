@@ -19,6 +19,11 @@
   -Tag. The script shows every working tree's git status and asks once before the
   first git write, unless -Yes.
 
+  Before that first git write it also clears any stale .git\index.lock, the
+  empty lock files left behind when a repository is read over a file bridge
+  that will not let git delete the lock it wrote. A lock with bytes in it
+  belongs to a live operation and stops the release instead.
+
 .PARAMETER Version
   The version to set everywhere, e.g. 1.0.0 or 1.1.0. Required with -Commit and
   not allowed without it. A version number means a commit exists in the
@@ -212,6 +217,32 @@ Write-Host ""
 Write-Host ">>> checking every branch and remote before any git write" -ForegroundColor Cyan
 foreach ($t in $trees) {
   Set-Location $t.Path
+  # A stale .git\index.lock stops the first `git add` dead and leaves the
+  # release half done, so it is cleared here, before anything is written.
+  #
+  # Where they come from: tooling that reads these repositories over a file
+  # bridge. Git writes index.lock whenever it refreshes its index, even for a
+  # read like `git status`, and the bridge refuses the delete afterwards, so a
+  # zero-byte lock stays behind and the next real git write fails on it.
+  #
+  # Why an empty one is safe to remove: git fills the lock with the new index
+  # and renames it over the old one, so a lock belonging to a live operation
+  # has bytes in it. A lock of zero bytes belongs to nothing. On top of that,
+  # Windows will not let this script delete a file a running git process holds
+  # open, so a removal that succeeds is a removal that was safe. A lock with
+  # bytes in it, or one that will not delete, stops the release instead.
+  $lock = Join-Path $t.Path '.git\index.lock'
+  if (Test-Path $lock) {
+    if ((Get-Item $lock).Length -ne 0) {
+      throw "$($t.Name): $lock has bytes in it, so a git operation may still be running. Let it finish, or check the repository by hand, and run this again. Nothing has been committed anywhere."
+    }
+    try {
+      Remove-Item -Force $lock
+    } catch {
+      throw "$($t.Name): $lock could not be removed ($($_.Exception.Message)). A git process is holding it open. Nothing has been committed anywhere."
+    }
+    Write-Host ("{0,-12} cleared a stale .git\index.lock" -f $t.Name) -ForegroundColor Yellow
+  }
   # No stderr redirection here: under $ErrorActionPreference = 'Stop', PowerShell
   # can turn a redirected native command's stderr into a terminating error.
   $current = git symbolic-ref --short HEAD
