@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.18
+
+`toolkit-api.md` is at draft 6, and the contract it publishes is now the
+functionality that exists.
+
+Commands, events, record files, and an integration between DeepTest and
+UntangleIt were published here as shipped and were never built. They are in a
+new section 10, "Proposed, not built", which is a notebook and not a promise.
+
+DeepTest gained the `prsToolkit` discovery metadata this document has required
+since draft 2 and had never carried, and a regression test that checks the
+mirrored contract against the real DeepTest and UntangleIt implementations, so
+the document and the tools cannot part company again without a build failing.
+
 ## 1.0.13
 
 The library documents record a hole in the ordered-operand rule and where the
