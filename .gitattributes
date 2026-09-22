@@ -1,0 +1,5 @@
+# Keep line endings as written (LF) on every platform so the library documents and their mirrors stay byte for byte identical.
+* text=auto eol=lf
+*.wasm binary
+*.png binary
+*.vsix binary
