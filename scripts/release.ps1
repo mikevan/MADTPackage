@@ -80,7 +80,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$root = "C:\workspace\MikeVan's AI Development Toolkit"
+# The toolkit root is two levels up from the folder this script sits in, which
+# is what $PSScriptRoot holds. It used to be written out in full, and that
+# broke the moment the workspace moved; a release must not depend on a folder
+# name. $PSCommandPath is the script FILE, so two parents from there lands on
+# MADTPackage and every tree goes missing.
+$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
 # Dependency order. The libraries first: both extensions bundle their dist.
 $trees = @(
@@ -102,6 +107,7 @@ $mirrors = @(
   @{ From = 'toolkit\plan-1.0-javascript-frameworks.md'; To = @("$root\DeepTest\docs\toolkit\plan-1.0-javascript-frameworks.md", "$root\UntangleIt\docs\toolkit\plan-1.0-javascript-frameworks.md") },
   @{ From = 'toolkit\mbcc-why-and-how.md';              To = @("$root\DeepTest\docs\toolkit\mbcc-why-and-how.md", "$root\UntangleIt\docs\toolkit\mbcc-why-and-how.md", "$root\complexity\docs\mbcc-why-and-how.md") },
   @{ From = 'toolkit\untangle-it-spec.md';              To = @("$root\DeepTest\docs\toolkit\untangle-it-spec.md", "$root\UntangleIt\docs\toolkit\untangle-it-spec.md") },
+  @{ From = 'toolkit\behaviour-gate.md';                To = @("$root\DeepTest\docs\toolkit\behaviour-gate.md", "$root\UntangleIt\docs\toolkit\behaviour-gate.md") },
   @{ From = 'toolkit\witness.md';                       To = @("$root\Witness\docs\witness.md", "$root\DeepTest\docs\witness.md", "$root\UntangleIt\docs\witness.md") },
   @{ From = 'deeptest\build-status.md';                 To = @("$root\DeepTest\docs\build-status.md") },
   @{ From = 'deeptest\engineering-notes.md';            To = @("$root\DeepTest\docs\engineering-notes.md") },
