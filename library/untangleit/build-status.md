@@ -2,7 +2,29 @@
 
 Michael Van Geertruy, with Claude. Project Revive Solutions, LLC.
 
-Updated 2026-09-12. Source tree at C:\workspace\MikeVan's AI Development Toolkit\UntangleIt. Publisher `prs`, extension id `prs.untangleit`.
+Updated 2026-09-25. Source tree at C:\workspace\MikeVan's AI Development Toolkit\UntangleIt. Publisher `prs`, extension id `prs.untangleit`.
+
+## 2026-09-25, 1.0.21: the governed interaction layer (implemented, uncommitted)
+
+- The clipboard hand-off and the modal confirmation are **deleted**, not
+  wrapped. A governed chat participant, `prs.untangleit.governed`, is the only
+  place a model is reached, and the person sends. `src/copilot.ts` and the
+  untangle brief builder are gone.
+- Registered interactions: `failure.explain`, `finding.explain`, and
+  `method.propose-untangle`. Each declares one objective, its constraints, its
+  validators, one bounded correction, its authorization boundary and its
+  verification. Nothing unregistered may be asked.
+- An attempt that proposes asks the person a plain-language question first,
+  and one yes authorizes one attempt. A validated proposal is rendered as a
+  read-only diff with its files named; UntangleIt applies nothing.
+- The governance record is written by Witness into `.untangleit/`, append-only,
+  and `src/ui/governanceView.ts` shows it read-only.
+- `untangleit.polyglot.agents.enabled` gates every agentic affordance. The
+  effective state is the conjunction with DeepTest's setting, so either
+  product's explicit false stops both, and the participant checks it before it
+  consumes a pending authorized attempt.
+- The behaviour gate, measurement, ranking and the run record are unchanged by
+  this work.
 
 ## 2026-09-12, 1.0.8: Mocha and Playwright component tests in the test gate
 
@@ -43,13 +65,13 @@ Updated 2026-09-12. Source tree at C:\workspace\MikeVan's AI Development Toolkit
   still to run on Michael's machine.
 - Verify on HelloWorld: "Find the tangled methods" puts `pick_greeting()`
   first with "has a tangle of N. Your limit is 15."; "Untangle it" produces
-  a brief with the section "What lowers tangle, and what does not".
+  a governed request carrying the section "What lowers tangle, and what does not".
 
 ## What exists (v1.0.0; the core below dates from 0.1.3 and is unchanged except where the 2026-09-12 section says)
 
 - One language contract (src/languages/types.ts) and a registry; nothing above the contract names a language. TypeScript/JavaScript (Jest, Vitest) and Python (pytest) plugins: detection, measuring through tree-sitter, and running the project's own tests.
 - The engine (src/engine/tangle.ts): rank tangled methods by tangle (MBCC), snapshot before an untangling, compare after, pieces with all three numbers, judged by tangle.
-- The loop (src/loop.ts): "Untangle it" with the KeepSafe offer and the modal confirmation, the brief to the editor chat and clipboard, "Measure again" running the suite and measuring every piece, "Send another round" or "Stop here" up to the rounds setting.
+- The loop (src/loop.ts): "Untangle it" with the KeepSafe offer and, since 1.0.21, the authorization question and the governed participant in place of the deleted modal and clipboard hand-off; "Measure again" running the suite and measuring every piece; "Send another round" or "Stop here" up to the rounds setting.
 - The run record: .untangleit/runs.json, meant to be committed.
 - Side panel with the verdict, the tangled methods worst first as cards, and the engineer's numbers behind one switch; setup screen pre-filled from detection with a KeepSafe section and a DeepTest section.
 - The silent command `untangleit.api.measure` with the toolkit envelope, and the `prsToolkit` block in package.json.

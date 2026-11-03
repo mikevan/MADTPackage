@@ -119,20 +119,21 @@ checkpoint before the AI changes your code? You can restore it if the
 change goes wrong." with the buttons "Create a checkpoint" and "Skip".
 Press "Skip". If KeepSafe is not installed, this notification never
 appears.
-Expect next, either way: a dialog, "Send this to your AI assistant?", with
-one sentence naming `calc.js line 7` and saying that the assistant may
-change your code, and the buttons "Yes, send it" and "Cancel". Press
-"Cancel".
-Expect: nothing happens. The card is unchanged, the clipboard is unchanged,
-and no decision was recorded.
+Expect next, either way: a question in plain words naming `calc.js line 7`,
+saying what will be attempted, what may change, what must not, and what
+will be measured afterwards. Decline it.
+Expect: nothing happens. The card is unchanged, nothing was sent, no
+decision was recorded, and the chat is untouched.
 
-**D4a. Fix, sent.** Press "Fix this" again. Press "Create a checkpoint" if
-KeepSafe offers one; KeepSafe shows its own message with the checkpoint's
-name. Press "Yes, send it".
-Expect: a message that the brief is on your clipboard. Paste it into
-Notepad. It names `src/calc.js` line 7, lists the three conditions, says
-which one the tests never satisfy, and ends with "will not accept the fix
-on your behalf". The card now shows "A fix was requested".
+**D4a. Fix, authorized.** Press "Fix this" again. Press "Create a
+checkpoint" if KeepSafe offers one; KeepSafe shows its own message with the
+checkpoint's name. Answer yes to the question.
+Expect: the chat input is filled with a request to DeepTest's participant
+and nothing is sent. **Nothing goes to your assistant until you press send
+yourself.** Press send.
+Expect: a governed answer in the chat, and the card now shows "A fix was
+requested". One yes authorized one attempt: pressing send again asks
+nothing new of the model.
 
 **D4b. Setup screen.** Press "Change the setup". Find the heading "Before
 the AI changes your code".
@@ -165,13 +166,13 @@ Press "Fix this".
 Expect: a list with two choices, "Break it into smaller pieces" and "Test
 every way through it as it is", each with one sentence saying what the
 assistant would do. Pick "Break it into smaller pieces". Then the same
-KeepSafe offer (if installed) and the same "Send this to your AI
-assistant?" dialog as D4, with the sentence naming the function. Press
-"Yes, send it".
-Expect: the brief on the clipboard starts "# DeepTest: bring calc() within
-10 ways through", quotes the function with line numbers, lists the lines
-inside it that are short of tests, and says the existing tests must pass
-without being edited. The row now shows "A fix was requested on <date>.
+KeepSafe offer (if installed) and the same authorization question as D4,
+naming the function. Answer yes.
+Expect: the chat input is filled and nothing is sent. Press send.
+Expect: a governed answer naming the function, and where it proposes a
+change, the change is shown to you as a read-only diff with its files
+named. **DeepTest does not apply it. You do.** The row now shows "A fix was
+requested on <date>.
 Still N ways through over your limit, nothing changed. Your call again."
 and an "Undo decision" button. Press "Undo decision"; the sentence goes.
 
@@ -216,8 +217,9 @@ Record: could you say, in your own words, what is wrong with each and what
 you would do about it, without opening the code? Where you could not, copy
 the sentence that lost you.
 
-**G3.** Pick one card and press "Fix this". Hand the brief to whatever
-assistant you use. When it says done, press "Check my code again".
+**G3.** Pick one card and press "Fix this", answer the question, and press
+send in the chat. Apply the change yourself from the diff it shows you.
+When you are done, press "Check my code again".
 Record: did the line go green? If not, what did the card say?
 
 ## H. Ways it should refuse
@@ -242,3 +244,43 @@ to retry, or "Change the setup" if a field on the setup screen was wrong.
 For each case: pass, or the exact text on screen. G1 through G3 in full.
 The findings that matter most are any sentence Jeff would have to ask an
 engineer to explain.
+
+## J. AI assistance, switched off
+
+**J1. The switch.** In Settings, find "Polyglot: AI assistance" for DeepTest
+and turn it off. Run a check that produces at least one card.
+Expect: no "Explain with Copilot" offer anywhere, and no "Fix this" button
+that reaches an assistant. Nothing says why unless you ask for it: the
+verdict, the numbers, and every measurement are unchanged.
+
+**J2. Nothing is spent while it is off.** With the switch still off, invoke
+DeepTest's chat participant directly in the chat.
+Expect: one sentence saying Polyglot AI assistance is disabled and telling
+you to enable it in the installed Polyglot extension's settings. Nothing is
+sent, nothing is recorded, and if you had authorized an attempt it is still
+authorized when you turn the switch back on.
+
+**J3. Either product's switch stops both.** Turn DeepTest's back on and turn
+UntangleIt's off. Run a DeepTest check.
+Expect: DeepTest offers no AI assistance either. One switch off means every
+installed Polyglot product stops reaching a model.
+
+Turn both back on before continuing.
+
+## K. The Governance History
+
+**K1. What was established.** After at least one governed interaction, run
+the "Governance History" command.
+Expect: a read-only view, one entry per interaction, saying what was
+attempted, under which interaction, what the checks decided, and what a
+later measurement established. It says what Polyglot established and never
+what it knew.
+
+**K2. What it does not hold.** Read the entries.
+Expect: no source from your project, no prompt text, no raw model response,
+and no proposal content. If you find any of those, stop and report it.
+
+**K3. It survives the window.** Close the editor, reopen the folder, and run
+the command again.
+Expect: the same entries. The record is a file in your project folder, not
+something held in memory.

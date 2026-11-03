@@ -47,6 +47,18 @@
 .PARAMETER SkipTests
   Skip npm test. For a docs-only alignment. Do not use for a tagged release.
 
+.PARAMETER GovernanceOnly
+  Run the release governance gate and stop, before Phase 0. Nothing is
+  mirrored, versioned, built, packaged, installed, committed, or tagged. It
+  cannot be combined with -Version, -Subject, -BodyFile, -Commit, or -Tag,
+  because a command that looks like a release must not succeed after doing
+  only verification.
+
+.PARAMETER GovernanceFixtureRoot
+  A governance fixture root for the gate to inspect instead of the real
+  toolkit. Accepted only with -GovernanceOnly. A normal release always
+  inspects the real toolkit and has no parameter that can change that.
+
 .PARAMETER NoInstall
   Do not install the built VSIXs into VS Code.
 
@@ -76,7 +88,9 @@ param(
   [switch] $Tag,
   [switch] $SkipTests,
   [switch] $NoInstall,
-  [switch] $Yes
+  [switch] $Yes,
+  [switch] $GovernanceOnly,
+  [string] $GovernanceFixtureRoot
 )
 
 $ErrorActionPreference = 'Stop'
@@ -145,6 +159,17 @@ if ($Tag -and -not $Commit) {
 if ($Tag -and $SkipTests) {
   throw 'A tagged release runs the tests. Drop -SkipTests or -Tag.'
 }
+# The fixture root exists so the red release-control test has something to fail
+# against. A normal release always sends the real toolkit root to the gate.
+if ($GovernanceFixtureRoot -and -not $GovernanceOnly) {
+  throw '-GovernanceFixtureRoot is only accepted with -GovernanceOnly. A normal release inspects the real toolkit and has no parameter that can change that.'
+}
+# Not about write safety: -GovernanceOnly already writes nothing. It is that a
+# command which looks like a release must not succeed after doing only
+# verification.
+if ($GovernanceOnly -and ($Version -or $Commit -or $Tag -or $Subject -or $BodyFile)) {
+  throw '-GovernanceOnly is verification only. Drop -Version, -Subject, -BodyFile, -Commit, and -Tag, or drop -GovernanceOnly.'
+}
 if ($BodyFile -and -not (Test-Path $BodyFile)) {
   throw "Body file not found: $BodyFile"
 }
@@ -152,6 +177,43 @@ foreach ($t in $trees) {
   if (-not (Test-Path (Join-Path $t.Path 'package.json'))) {
     throw "Missing tree: $($t.Path)"
   }
+}
+
+# ---- The release governance gate (rules 72 and 73). Before Phase 0. ----
+# Unconditional. -SkipTests does not reach it, and there is no -SkipGovernance,
+# no -Force, and no warning-only mode. Nothing installs anything here: missing
+# dependencies fail the release rather than skipping the gate.
+Step 'MADTPackage: governance dependency preflight' {
+  $gateRoot = "$root\MADTPackage"
+  if (-not (Test-Path "$gateRoot\node_modules\typescript")) {
+    throw "MADTPackage's governance dependencies are not installed. Prepare the tree as the Phase 9 closure record describes. This script installs nothing."
+  }
+  if (-not (Test-Path "$gateRoot\node_modules\@projectrevivesolutions\witness")) {
+    throw "MADTPackage cannot reach Witness's public API. Prepare the tree as the Phase 9 closure record describes. This script installs nothing."
+  }
+  $global:LASTEXITCODE = 0
+}
+
+# The fixture root, when there is one. The guard above has already proved this
+# implies -GovernanceOnly, so a normal release never sets it and the gate
+# always inspects the real toolkit. The variable is process-scoped, so a gate
+# that throws takes it with it; this is set and cleared in plain statements
+# because the gate itself must stay a recognized top-level Step, with no
+# try, catch, or finally around it.
+if ($GovernanceFixtureRoot) {
+  $env:POLYGLOT_GOVERNANCE_ROOT = (Resolve-Path $GovernanceFixtureRoot).Path
+}
+
+# No Push-Location, and so no handler to put one back: npm is pointed at
+# MADTPackage by path instead.
+Step 'MADTPackage: release governance gate' { npm --prefix "$root\MADTPackage" run test:governance }
+
+Remove-Item Env:\POLYGLOT_GOVERNANCE_ROOT -ErrorAction SilentlyContinue
+
+if ($GovernanceOnly) {
+  Write-Host ''
+  Write-Host 'Governance gate passed. Stopping before Phase 0: nothing was mirrored, versioned, built, packaged, installed, committed, or tagged.' -ForegroundColor Green
+  exit 0
 }
 
 Write-Host $(if ($Version) { "Toolkit release $Version" } else { 'Toolkit verification build (no version change)' }) -ForegroundColor Green
@@ -188,6 +250,16 @@ foreach ($t in $trees) {
   if ($t.Kind -ne 'pack') {
     if (-not $SkipTests) {
       Step "$($t.Name): npm test" { npm test }
+      # The extension-host suite, for the two trees that have one. The unit
+      # suites above never enter a VS Code instance, so a command that only
+      # exists in the manifest, or an activation that throws, passes them and
+      # fails a customer. Step already throws on a nonzero exit, so this fails
+      # closed on red with no new mechanism. -SkipTests covers it for the same
+      # reason it covers npm test: that switch is the docs-only escape and is
+      # not for a tagged release.
+      if ($t.Kind -eq 'extension') {
+        Step "$($t.Name): npm run test:vscode" { npm run test:vscode }
+      }
     }
     Step "$($t.Name): npm run build" { npm run build }
   }

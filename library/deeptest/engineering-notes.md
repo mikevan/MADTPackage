@@ -318,10 +318,15 @@ editor buffer over the disk so an unsaved edit already invalidates.
 
 ### The Fix hand-off
 
-`workbench.action.chat.open` with a query, when the editor has a chat
+**Historical. Both halves of this are gone as of 1.0.21.** It used
+`workbench.action.chat.open` with a query, when the editor had a chat
 surface, and the clipboard always. No model, no key, no retry. VSCodium
-under test has no chat command and the fallback path is what the suite
-exercises.
+under test had no chat command and the fallback path was what the suite
+exercised.
+
+What replaced it is in "The governed layer" below. The pre-fill command
+survives and is the only chat command the product may execute; the
+clipboard hand-off does not survive at all.
 
 ### TypeScript / JavaScript per-test attribution
 
@@ -466,11 +471,17 @@ with no undo. Two gates now stand in front of the hand-off, in this order:
    code, nothing to break when either extension updates. The offer is
    controlled by `deeptest.keepSafe.offerCheckpoint` (default on) and only
    shown when KeepSafe is installed. Closing the notification counts as
-   "Skip"; the next gate is modal and does the deciding.
-2. A modal dialog, "Send this to your AI assistant?", names the file and
-   line, says the assistant may change code and tests, and says DeepTest
-   will measure and not accept. Nothing is recorded in decisions.json and
-   nothing goes to the clipboard until "Yes, send it".
+   "Skip"; the next gate does the deciding.
+2. **Until 1.0.21 this was a modal dialog**, "Send this to your AI
+   assistant?", naming the file and line, saying the assistant may change
+   code and tests, and saying DeepTest will measure and not accept.
+   Nothing was recorded in decisions.json and nothing went to the
+   clipboard until "Yes, send it". **The modal is deleted.** The gate is
+   now the authorization question of the governed layer: the person is
+   told what was measured, what is being attempted, what may change, what
+   must not, and what will be measured afterwards, in plain words, and one
+   yes authorizes one attempt. Nothing is recorded and nothing is sent
+   before that yes, and the kill switch is checked before any of it.
 
 When KeepSafe is not installed the setup screen says so under "Before the
 AI changes your code", links the Marketplace listing, and offers one
@@ -479,11 +490,47 @@ button that opens KeepSafe's page in the Extensions view (the built-in
 principle that Jeff should not be told about tools he does not have while
 he is reading a verdict.
 
-The integration suite cannot press a modal button. The harness sets
-`DEEPTEST_TEST_HOST=1` in the extension host's environment
+The integration suite cannot answer a question meant for a person. The
+harness sets `DEEPTEST_TEST_HOST=1` in the extension host's environment
 (`extensionTestsEnv` in test/integration/runTests.ts) and the Fix flow
-treats that as "Yes, send it". It is read from the process environment,
+treats that as the person's yes. It is read from the process environment,
 not from a setting, so nothing a user can configure skips the question.
+That rule outlived the modal it was written for and still governs.
+
+### The governed layer
+
+`src/copilot.ts`, the local hand-off and both brief builders are deleted
+rather than wrapped, because a wrapper leaves two paths to a model and the
+second one is the one nobody checks. A structural test asserts zero, not a
+list of known locations.
+
+`src/agent/` carries what replaced them: the five registered interactions,
+the chat participant `prs.deeptest.governed`, the availability check, the
+kill-switch reader and the one place the effective state is combined, the
+pre-fill, the pending authorized attempt, and the read-only diff that
+renders a proposal. Witness carries the rest: the packet, the constraints,
+the registry, prompt construction, the response envelopes, the validators,
+the record and the store.
+
+Three things about it that cost time and are worth keeping.
+
+The model is always `request.model` and nothing else. That is the only API
+surface exposing the person's choice, and routing to a model they did not
+pick spends their quota on our decision, which with premium-request
+multipliers is a financial act.
+
+Draining the response is the adapter's job and holding it back is
+Witness's. `sendRequest` returns text as an async iterable, and the adapter
+reads it whole into a string before anybody sees anything.
+
+Proposal delivery is diff-only. A validated proposal is rendered, its files
+named, its content shown through a read-only diff, and the person makes the
+change. `needsConfirmation: true` really does hold an edit for review, but
+pressing Apply did not apply it and `applyEdit` reported false, on the one
+version and host tested. That finding is scoped to what was tested. The
+cost is plainly that the person re-types or copies the change; what it buys
+is that no model-derived text reaches their source without passing through
+their own hands.
 
 ## Fix this on a function
 
@@ -1839,3 +1886,21 @@ now wraps such a transformer as well, and deleting the salt fails it. A test
 that cannot fail on the code it guards is the same defect as the Angular
 runner-config test in 1.0.15, found twice in one day by the same habit of
 mutating the code to see whether the test notices.
+
+## The integration suite meets the governed layer (1.0.21)
+
+The release qualification of 2026-11-02 got past UntangleIt and stopped at DeepTest's `test:vscode` with "Timed out waiting for fix decision". It was the same failure UntangleIt had, found one tree later. DeepTest's `test:vscode` entered the release path on 2026-09-25, so it had never run against Phase 8.
+
+**The gate.** `fixShortfall` asks `agenticGateOpen` before anything else, and that asks `mayOfferAgentic()`. The test editor has no signed-in assistant, so it has no model, so "Fix this" refused and wrote no decision. The suite waited five seconds for a `fix-pending` decision that could never arrive. The gate was right. The suite was written before it existed.
+
+**The clipboard, waiting behind it.** The next lines read the clipboard for the old brief. Production pre-fills `@deeptest <headline>` into the chat instead and writes no clipboard, so that check would have failed next.
+
+**What was kept.** The `fix-pending` check is still true. Production records a decision of kind `fix`, and DeepTest reports it as `fix-pending` while the line is still short. Michael ruled that the pre-fill prompt stays in production exactly as it is. Only the test environment changes.
+
+**The fix, the same one UntangleIt got.** `peekPendingAttempt()` reads the waiting attempt without taking it and returns its interaction and decision only. `hasPendingAttempt()` already looked without spending, but it could only say yes or no. `prefillChat` remembers the invocation once the editor accepts it. The activation API gains `waitingAttempt()`, deliberately not named `handOff`, because the release governance gate (row A) keeps the deleted local function by that name from returning, and it refused exactly that name in UntangleIt the same day. A unit test pins that the look never spends the attempt and the take still does.
+
+The suite now runs in three launches. The Python fixture runs twice: once with DeepTest's own copy of the stub model from experiment E7 (`test/integration/stub-model`), and once with no model. With the stub, "Fix this" records the `fix-pending` decision, leaves the `coverage.propose-test` attempt waiting for line 6 of `src/calc.py`, and pre-fills the exact invocation; at the end the suite checks that nothing was sent to the stub, whose response handler throws. With no model, "Fix this" records nothing, writes nothing to `decisions.json`, and leaves nothing waiting, while every other check in the suite passes exactly as it does with a model. The Jest fixture never reaches an agentic path and runs as it always has. Each launch checks which extensions are actually loaded, so a harness mistake cannot make one launch quietly test the other's case. The stub is never packaged, because `.vscodeignore` excludes `test/**`. E7 itself is recorded in UntangleIt's engineering notes, under the same heading.
+
+**The defect the governed launch found.** With a model present, the gate opened and "Fix this" still refused, and the test editor's own output log said why: "This project's test files do not follow one convention that a majority of them agree on." That was false. DeepTest ran Python coverage with `dynamic_context = test_function`, which labels a test `test_calc.test_both`, a module and a function with no file in it. Everything that decides where "Fix this" proposes a test reads an id as `<test file>::<test name>`, the form the JavaScript hooks write, so for Python it took each whole label for a file. Every Python test looked like its own file with no folder, and "Fix this" refused on every Python line with a reason that was not true. The unit tests never saw it because they feed the destination code hand-written paths, never what the Python runner produces. A module name cannot be turned back into a file path without guessing, so DeepTest now records the fact pytest already has. A small plugin, generated into `.deeptest/` on every run and loaded with `-p`, switches the coverage context to pytest's node id at each test phase, so a line reads `tests/test_calc.py::test_both`. The `|run` phase is kept and setup and teardown are dropped, which the parser already did for that form. Parametrized cases are now told apart as a side effect. Verified with coverage 7.17.0 and pytest 9.1.1 on the fixture before the change was handed over. The adapter's end-to-end test now pushes the real ids through the destination code.
+
+**What the suite targets now.** It presses "Fix this" on line 4, which is short and exercised by one test file, so the proposal has exactly one destination. Line 6 is untested, and the new file DeepTest would derive for it is `tests/test_calc.py`, which already exists, so DeepTest refuses by design and now says that truthfully. Whether an untested line should instead add to the test file its source already has is an open question for Michael, recorded and not decided here.

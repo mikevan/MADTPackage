@@ -119,6 +119,46 @@ Two files, both written by the tool that owns them. KeepSafe's files are real
 and are documented in KeepSafe's own README, but nothing in this toolkit reads
 them, so they are not part of this channel; see section 10.
 
+### 4.1 Records written on a tool's behalf
+
+One record does not fit the rule above, and the difference is deliberate
+rather than an exception made for convenience. The governance record is
+written by Witness, the shared library, into a directory the tool supplies.
+There is exactly one such record and one such writer in 1.0.21; this is not a
+general facility for delegated writers.
+
+| Tool | Directory it supplies | Public file | Written by | Meaning |
+|---|---|---|---|---|
+| DeepTest | `.deeptest/` | `.deeptest/governance.jsonl` | Witness | One line per governed interaction: what was attempted, under which registered interaction, what the checks decided, and what a later measurement established. Append-only and local. |
+| UntangleIt | `.untangleit/` | `.untangleit/governance.jsonl` | Witness | The same record, for UntangleIt's governed interactions. |
+
+**Each tool owns and selects its own directory; Witness owns the storage
+mechanism.** There is one serializer, one append path and one fold, all in
+Witness, reached only through its exported API. Neither product contains a
+second. That is why these two files are listed apart from section 4: the rule
+there is that the publishing tool writes the file itself, and that rule is
+unchanged and still true of the two files it governs.
+
+**The record holds what happened without holding what was said.** No customer
+source, no prompts, no raw model responses, no proposals. The property is
+structural rather than promised: the record has no field that could carry any
+of them.
+
+### 4.2 Chat participants
+
+Each product contributes one governed chat participant. It is a transport
+surface rather than a command, so it is not in the tables of section 3 and
+cannot be invoked by a sibling tool.
+
+| Tool | Participant id |
+|---|---|
+| DeepTest | `prs.deeptest.governed` |
+| UntangleIt | `prs.untangleit.governed` |
+
+A participant is contributed in the product's manifest and created in the
+product's own source. The person invokes it; nothing in this toolkit invokes
+it on their behalf.
+
 ## 5. Events
 
 VS Code has no event bus between extensions, so there are two ways to be told something happened, and callers pick by need:

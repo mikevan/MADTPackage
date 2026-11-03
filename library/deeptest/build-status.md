@@ -2,7 +2,7 @@
 
 Michael Van Geertruy, with Claude. Project Revive Solutions, LLC.
 
-Updated 2026-09-22 (1.0.18, in the tree). Companion to vscode-density-extension-spec.md.
+Updated 2026-09-25 (1.0.21, implemented and uncommitted in the tree). Companion to vscode-density-extension-spec.md.
 Source tree and VSIX live at C:\workspace\MikeVan's AI Development Toolkit\DeepTest on Michael's machine. The
 authoritative copy of this file is docs/build-status.md in that tree.
 Committed on main: cc9d908 "Cognitive complexity beside cyclomatic" (0.3.7),
@@ -16,6 +16,31 @@ and every extension is tagged 1.0.0 together (DeepTest, UntangleIt, the
 pack, and the library). From here the minor number moves once per language
 across the whole toolkit (Java 1.1, C# 1.2, C++ 1.3, Go or PHP 1.4); patch
 numbers cover everything else. See docs/toolkit/toolkit-roadmap.md.
+
+## 2026-09-25, 1.0.21: the governed interaction layer (implemented, uncommitted)
+
+- The clipboard hand-off and the confirmation modal are **deleted**, not
+  wrapped. A governed chat participant, `prs.deeptest.governed`, is the only
+  place a model is reached, and the person sends. `src/copilot.ts`, the local
+  hand-off and both brief builders are gone.
+- Registered interactions: `failure.explain`, `finding.explain`,
+  `coverage.propose-test`, `function.propose-tests` and
+  `function.propose-refactor`. Each declares one objective, its constraints,
+  its validators, one bounded correction, its authorization boundary and its
+  verification. Nothing unregistered may be asked.
+- An attempt that proposes asks the person a plain-language question first,
+  and one yes authorizes one attempt. A validated proposal is rendered as a
+  read-only diff with its files named; DeepTest applies nothing.
+- The governance record is written by Witness into `.deeptest/`, append-only,
+  protected from the working-directory cleanup by `WORK_DIR_KEEP`, and
+  `src/ui/governanceView.ts` shows it read-only.
+- `deeptest.polyglot.agents.enabled` gates every agentic affordance, including
+  the four propose affordances that model absence used to leave alone. The
+  effective state is the conjunction with UntangleIt's setting, so either
+  product's explicit false stops both, and the participant checks it before it
+  consumes a pending authorized attempt.
+- Measurement, density, attribution, the decision store and the report are
+  unchanged by this work.
 
 ## 2026-09-22, before 1.0.19: pre-gate hygiene
 
@@ -81,7 +106,10 @@ behaviour gate starts. Neither gets a version of its own; both ride with
   silent command `untangleit.api.measure`; the hand-off to `untangleit.method`
   through `prs.untangleit`; `keepsafe.quickCheckpoint`;
   `.deeptest/decisions.json` and `.untangleit/runs.json`; and the real
-  `activate` exports, `{ state, run, report }` and `{ state, run }`.
+  `activate` exports, `{ state, run, report }` and `{ state, run }`. **1.0.21
+  adds two published surfaces**: the governed chat participant of each product,
+  and the governance record each product's directory carries, written by
+  Witness. See sections 4.1 and 4.2 of the contract.
 - `DeepTest\package.json` gains a `prsToolkit` block: protocol 1, verb
   "measure and judge", `commands: []`, `records: [".deeptest/decisions.json"]`.
   Section 2 now states that `commands` lists silent commands only, which is

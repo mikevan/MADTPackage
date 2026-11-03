@@ -2,7 +2,7 @@
 
 Michael Van Geertruy, with Claude. Project Revive Solutions, LLC.
 
-Draft 2, 2026-09-22, frozen, with section 5 corrected on 2026-09-23 to match what was built. Draft 1 was frozen earlier the same day and is superseded whole. It placed the gate around a transform UntangleIt performs itself, which is not the workflow: UntangleIt has handed the edit to the editor's assistant since 0.1.11, and a continuity check against that release found the workflow files byte-identical in 1.0.18. Draft 2 places the gate inside the workflow that exists, and adds Python. Companion to untangle-it-spec.md and witness.md. Changing sections 2 through 7 means a new draft and a new ruling, not an edit.
+Draft 3, 2026-09-25, frozen. Draft 3 supersedes draft 2 whole, on Michael's ruling of 2026-09-25, which authorizes this draft. It carries draft 2 forward unchanged except in section 2, which now describes the governed hand-off that exists. Draft 2 was corrected in place twice, in section 5 on 2026-09-23 and in section 2 on 2026-09-25. The rule at the end of this paragraph did not permit either correction, and neither is a precedent. Draft 1 was frozen on 2026-09-22 and was superseded whole by draft 2. It placed the gate around a transform UntangleIt performs itself, which is not the workflow: UntangleIt has handed the edit to the editor's assistant since 0.1.11, and a continuity check against that release found the workflow files byte-identical in 1.0.18. Draft 2 places the gate inside the workflow that exists, and adds Python. Companion to untangle-it-spec.md and witness.md. Changing sections 2 through 7 means a new draft and a new ruling, not an edit.
 
 The correction is documentation catching up with the implementation, not a change of design. Both recorders and the record schema live in Witness, because Witness owns instrumentation delivery and behaviour recording across the supported runners and languages. Building the gate proved why: UntangleIt had no way to get instrumented code in front of any JavaScript runner, and the way to get it there was the one DeepTest already used. That machinery is now Witness's, both tools consume it, and neither tool requires the other.
 
@@ -16,9 +16,11 @@ The gate answers it from recorded behaviour: called the way the project's own te
 
 The workflow does not change. Not one button, not one sentence of the modal, not the order of the gates.
 
-At the existing "Yes, send it", after the person has confirmed and before the brief reaches the clipboard and the editor chat, UntangleIt records the selected method's boundary while the project's own tests run.
+At the existing "Yes, send it", after the person has confirmed and before the brief reaches the editor chat, UntangleIt records the selected method's boundary while the project's own tests run.
 
-The hand-off then proceeds exactly as it does today. The brief goes to the clipboard, `workbench.action.chat.open` gets it, the assistant changes the code, and UntangleIt waits.
+The hand-off then proceeds as it does today. `workbench.action.chat.open` pre-fills the chat input with an invocation of UntangleIt's governed participant, `prs.untangleit.governed`, and nothing is sent: the person presses send, and the participant handles the interaction under governance from there. Any change the model produces comes back as a diff-only proposal, which UntangleIt shows and never applies, so the person makes the edit themselves. UntangleIt then waits.
+
+This document previously described a hand-off that put the brief on the clipboard and let the assistant change the code directly. That hand-off is gone. The paragraph above replaces that description; the design it served is unchanged, and the rest of this document stands as written.
 
 At the existing "Measure again", UntangleIt records the boundary a second time, beside the test run and the tangle measurement it already performs there, and compares.
 

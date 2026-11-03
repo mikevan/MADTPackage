@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.19
+
+`release.ps1` derives the toolkit root from its own location instead of carrying
+a workspace path in a string, which broke the moment the workspace moved.
+
 ## 1.0.18
 
 `toolkit-api.md` is at draft 6, and the contract it publishes is now the
@@ -13,6 +18,14 @@ DeepTest gained the `prsToolkit` discovery metadata this document has required
 since draft 2 and had never carried, and a regression test that checks the
 mirrored contract against the real DeepTest and UntangleIt implementations, so
 the document and the tools cannot part company again without a build failing.
+
+## 1.0.16
+
+MADTPackage gains the `.gitattributes` the other four trees already had. It was
+the only tree without one, which meant Git would have written CRLF into the
+working tree on the next checkout of the authoritative library documents while
+their mirrors stayed LF, and Phase 0 would have failed on a mismatch that had
+nothing to do with content.
 
 ## 1.0.13
 

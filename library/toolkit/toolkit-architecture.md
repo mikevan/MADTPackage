@@ -2,9 +2,9 @@
 
 Michael Van Geertruy, with Claude. Project Revive Solutions, LLC.
 
-Draft 5, 2026-09-12 (draft 4 earlier the same day, draft 3 was 2026-09-11, draft 2 2026-09-09, draft 1 2026-09-06). Publisher: `prs` (Project Revive Solutions, LLC). The toolkit is MikeVan's AI Development Toolkit; the company publishes it. The words and the shape every tool in the toolkit shares, so that KeepSafe, DeepTest, UntangleIt, and whatever comes next read as one product family, integrate without knowing each other's insides, and can be reviewed against one standard. Where a tool departs from this document, the departure is written down in that tool's engineering notes with the reason.
+Draft 6, 2026-09-25 (draft 5 was 2026-09-12, draft 4 earlier the same day, draft 3 was 2026-09-11, draft 2 2026-09-09, draft 1 2026-09-06). Publisher: `prs` (Project Revive Solutions, LLC). The toolkit is MikeVan's AI Development Toolkit; the company publishes it. The words and the shape every tool in the toolkit shares, so that KeepSafe, DeepTest, UntangleIt, and whatever comes next read as one product family, integrate without knowing each other's insides, and can be reviewed against one standard. Where a tool departs from this document, the departure is written down in that tool's engineering notes with the reason.
 
-Draft 5 change: Witness, the toolkit's own instrumentation, is a second shared library, and principle 4 now says what shared libraries may and may not be (2026-09-12, later the same day). Draft 4 change: which number belongs to which tool, settled 2026-09-12 (see "Ways through" and "Tangle" below, and the MBCC paper, mbcc-why-and-how.md). Draft 3 change: the untangling tool is named UntangleIt (2026-09-11). The Marketplace refused its first display name as too similar to an existing listing, and the tool was unpublished, so the name, id, commands, and storage folder all changed at once. See toolkit-api.md for the identifiers.
+Draft 6 change: the governed interaction layer of 1.0.21 replaces the brief-and-hand-off vocabulary, and section 6 gains the folders that carry it (2026-09-25). The detail is not here: `1.0.21-governed-copilot-contract.md`, Revision 18, is the governing specification, and this document says only what a reader needs to recognize the shape. Draft 5 change: Witness, the toolkit's own instrumentation, is a second shared library, and principle 4 now says what shared libraries may and may not be (2026-09-12, later the same day). Draft 4 change: which number belongs to which tool, settled 2026-09-12 (see "Ways through" and "Tangle" below, and the MBCC paper, mbcc-why-and-how.md). Draft 3 change: the untangling tool is named UntangleIt (2026-09-11). The Marketplace refused its first display name as too similar to an existing listing, and the tool was unpublished, so the name, id, commands, and storage folder all changed at once. See toolkit-api.md for the identifiers.
 
 ## 1. The thesis
 
@@ -27,11 +27,13 @@ Use these words, in this sense, in every tool's interface, documentation, and co
 - **Shortfall**: one thing that falls below a limit, with a location.
 - **Card**: the on-screen unit for one shortfall: where, what, why, and the choices.
 - **Decision**: the person's recorded answer to a shortfall: Fix this, Accept as it is, or Leave for now. Pinned to the text it was made about; stale when that text changes.
-- **Brief**: the instructions a tool hands to an AI assistant. Precise enough that a capable model can nail it and a weak one cannot mistake it for something simpler.
-- **Hand-off**: giving a brief to the assistant. The only place a tool lets an AI touch the code, and always behind the gates.
-- **Gates**: the two prompts in front of every hand-off, in this order: the checkpoint offer (when KeepSafe is installed), then the modal confirmation that says what is about to happen. Nothing is recorded or sent before "Yes, send it".
+- **Interaction**: a registered thing a tool may ask a model to do. It declares exactly one objective, explain or propose, and the constraints, validators, correction budget, authorization boundary and verification it is bound by. A tool may ask for nothing that is not registered.
+- **Governed interaction**: an interaction carried out through the governed middle, which reconciles the constraints, refuses what it cannot check, issues and redeems a capability, sends once, validates the answer, allows one bounded correction, and records what happened.
+- **Participant**: the tool's contributed chat participant, and the only place a model is reached. The person invokes it and sends; no tool sends on their behalf.
+- **Authorization**: the plain-language question asked before an attempt that proposes. One yes authorizes one attempt. An explanation changes nothing, so it asks nothing.
+- **Gates**: what stands in front of an agentic affordance. The kill switch first, then the checkpoint offer (when KeepSafe is installed) and the authorization question for an attempt that proposes.
 - **Checkpoint**: KeepSafe's snapshot of the workspace. The undo.
-- **Judge**: what a tool does after a hand-off: measure again and say whether the result clears the bar. A tool judges; it never vouches for the assistant.
+- **Judge**: what a tool does after a governed interaction: measure again and say whether the result clears the bar. A tool judges; it never vouches for the assistant.
 - **Route**: the ordered decisions that must hold for control to reach a line, and where the tests stop along it.
 - **Plain words** and **the engineer's numbers**: the two registers. Plain words are always shown. The numbers appear beside them only when "Show the engineer's numbers next to the plain words." is ticked.
 
@@ -39,7 +41,7 @@ Use these words, in this sense, in every tool's interface, documentation, and co
 
 Michael's scale, applied to every part of every tool: **method call**, **atom**, **AI-based agent**, **skill**. An atom must leverage AI; that is the qualifying test. Prefer the AI-driven option where it fits; use a method call where a proof or a measurement is available and an AI adds nothing. Each tool's engineering notes list its components on this scale.
 
-Applied so far: DeepTest's engine, parsers, and coverage adapters are method calls (measurement, provable). Its Fix hand-off is an AI-based agent seam: the tool builds the brief, the person's assistant is the agent, the tool judges. KeepSafe is method calls throughout. UntangleIt's mechanical engine is method calls; its AI engine is an agent behind the same interface.
+Applied so far: DeepTest's engine, parsers, and coverage adapters are method calls (measurement, provable). Its Fix path is an AI-based agent seam: the tool builds the evidence, the governed middle carries the interaction, the person's model is the agent, the tool judges. KeepSafe is method calls throughout. UntangleIt's mechanical engine is method calls; its AI engine is an agent behind the same interface.
 
 ## 5. Principles
 
@@ -61,13 +63,14 @@ Every tool is a VS Code extension with these layers, in these folders, so a read
 
 - `src/engine/`: pure model and computation. No `vscode` import. Fully unit-tested. This is where the tool's truth lives.
 - `src/languages/`: the language contract (`types.ts`), the registry, shared helpers (tree-sitter, process running, runtime discovery), and one folder per language plugin.
-- `src/decisions/`: the person's decisions and the gated hand-off. Storage under `.<tool>/decisions.json`, plain JSON, meant to be committed.
-- `src/report/`: the pure report model, the brief builder, and the plain-language phrase builders.
+- `src/decisions/`: the person's decisions and the gated agentic entry points. Storage under `.<tool>/decisions.json`, plain JSON, meant to be committed.
+- `src/report/`: the pure report model and the plain-language phrase builders.
 - `src/ui/`: `words.ts` (the one place every sentence lives), the side panel webview, the setup screen, the report panel, editor overlays, the status bar.
+- `src/agent/`: everything the tool needs to reach a model, and nothing else. The registered interactions, the chat participant, the availability check, the kill-switch reader and the one place the effective state is combined, the pre-fill, the pending authorized attempt, and the read-only diff that renders a proposal.
+- `src/governance.ts`, `src/ui/governanceView.ts`: the directory the governance record is written into, and the read-only history that shows what was established.
 - `src/<sibling>.ts`: one small file per sibling tool holding its extension id, its public commands, the installed check, and the recommendation. Nothing else in the tool names the sibling.
 - `src/state.ts`, `src/config.ts`, `src/runner.ts`, `src/extension.ts`: the one place results live, the settings, the orchestration, the activation.
 - `hooks/`, `vendor/`: runner hooks and vendored grammars, copied to `dist/` by the build. The Witness runtime and loader live here as plain files; the Witness instrumenter is bundled by the build into `dist/hooks/` because it runs inside the project's own process.
-- `src/witness/`: DeepTest's own instrumentation while it is born here (docs/witness.md); it moves to the Witness library when a second tool needs it.
 - `test/`: unit tests under Vitest with fixtures per language; integration suites under `@vscode/test-electron` that drive the real screens.
 - `docs/engineering-notes.md`, `docs/build-status.md`, `docs/uat.md`: the reasons, the state, and the acceptance script written for Jeff.
 - `media/`: the Marketplace icon PNG (named by the `icon` field), the Activity Bar SVG, and any README images. `.vscodeignore` excludes `media/**` and re-includes the icon and the SVG, so GIFs never ride inside the VSIX; the Marketplace fetches README images from GitHub.
@@ -82,9 +85,23 @@ Storage on disk: `.<tool>/` at the workspace root, listed in `.gitignore` except
 - **Log**: everything the tool ran, verbatim, behind "Show the log".
 - **Failure states**: "No tests were found." with "Tell me where the tests are"; "The check did not finish." with the reason, "Check my code again", "Show the log", and "Change the setup".
 
+## 7b. The governed interaction layer
+
+Summarized here so a reader recognizes the shape. **`1.0.21-governed-copilot-contract.md`, Revision 18, is the governing specification**, and nothing in this section overrides it.
+
+- **The products gather deterministic evidence.** What a tool measured, and what it could not, in its own words.
+- **Witness owns the governed interaction machinery and the shared governance contracts**: the packet, the constraints, the interaction registry, prompt construction, the response envelopes, the validators, the record, and the store.
+- **A registered interaction declares its objective and its constraints.** Exactly one objective. A packet may add condition-specific constraints and may never omit, weaken, replace or contradict one the registered spec requires.
+- **Prerequisites and validation fail closed.** An interaction whose required checks cannot be completed never reaches a model. A result that could not be validated is not a validated result.
+- **Proposal delivery is diff-only today.** A validated proposal is rendered, its files named, its content shown through a read-only diff, and the person makes the change. That is an implementation decision with evidence behind it, not a product principle.
+- **Governance results are persisted locally**, append-only, in the directory the tool supplies, written by Witness.
+- **The products expose the history**, read-only, saying what was established and never what was known.
+- **A global kill switch gates agentic activity.** Each product contributes its own boolean setting; the effective state is their conjunction, so either product's explicit false stops every product reaching a model.
+- **The release boundary is guarded.** A deterministic release governance test proves no agentic entry point bypasses the governed adapter and the registry, and it runs before a release can proceed.
+
 ## 8. Testing standard
 
-Each tool measures itself with DeepTest and reports its own verdict in build-status. Unit tests pin exact user-facing strings. Integration suites run the real extension in a real editor against one fixture per supported language. The integration harness may bypass a modal only through a process-environment variable set by the harness, never through a setting.
+Each tool measures itself with DeepTest and reports its own verdict in build-status. Unit tests pin exact user-facing strings. Integration suites run the real extension in a real editor against one fixture per supported language. Where an integration harness must stand in for a person's answer, it does so only through a process-environment variable set by the harness, never through a setting.
 
 ## 9. Delivery
 
@@ -96,7 +113,7 @@ Flat cut shapes on a black ground in KeepSafe's orange and green, one object per
 
 ## 11. What is open
 
-- Witness is its own library at `C:\workspace\MikeVan's AI Development Toolkit\Witness` from 1.0.9, bundled into DeepTest and declared by UntangleIt for its behaviour gate; Jest, Vitest, and the Angular runners move onto it next, so every runner is an instrumenter, a transport, and a boundary on one attribution core. The engine counters (V8 precise coverage through `node:inspector` and the DevTools protocol) are its path for code it cannot transform.
+- Witness is its own library, bundled into DeepTest and declared by UntangleIt, and from 1.0.19 it also owns runner delivery and behaviour recording, and from 1.0.21 the governed interaction machinery. Six JavaScript and TypeScript runners reach it, so every runner is an instrumenter, a transport, and a boundary on one attribution core. The engine counters (V8 precise coverage through `node:inspector` and the DevTools protocol) are its path for code it cannot transform.
 
 - The switch-case counting rule for ways through in DeepTest (a case as one decision versus cumulative). For tangle it is settled: a switch is one. UntangleIt's dispatch-table transform is therefore never a tangle job; it lives only in the extension-point rule of the spec.
 - Whether the "ledger" that joins checkpoints to verdicts is a fourth tool or a feature of DeepTest, given KeepSafe stays untouched.

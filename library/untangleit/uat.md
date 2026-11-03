@@ -44,10 +44,10 @@ Expect: the card's sentence gains "(cyclomatic complexity 8, 3 over)". Untick it
 **C1. Declined.** Press "Untangle it".
 Expect, if KeepSafe is installed: the notification "Create a KeepSafe checkpoint before the AI changes your code? You can restore it if the change goes wrong." with "Create a checkpoint" and "Skip". Press "Skip".
 Expect next: a dialog, "Send this to your AI assistant?", with a sentence naming describeNumber() and 5 ways through, and the buttons "Yes, send it" and "Cancel". Press "Cancel".
-Expect: nothing happens. No record, nothing on the clipboard.
+Expect: nothing happens. No record, nothing sent, and the chat untouched.
 
 **C2. Sent.** Press "Untangle it" again, answer the checkpoint offer as you like, press "Yes, send it".
-Expect: a message that the brief is in the editor chat and on your clipboard, ending "press "Measure again" on describeNumber()". A new section, "Waiting on your assistance.", appears above "Untangle these first" with a card for describeNumber(): "Sent to your assistant on <date> (round 1). When it says done, press "Measure again"." and the buttons "Measure again" and "Open". This section stays on the panel until the untangling is finished or stopped, even after "Find the tangled methods again" if the method has dropped below the limit. Paste the clipboard into Notepad: it begins "# UntangleIt: bring describeNumber() in src/calc.ts down to at most 5 ways through", states the target three ways including "It does not mean "reduce by 5"", quotes the method with line numbers, and ends "It will not accept the result on your behalf".
+Expect: the chat input is filled with a request to UntangleIt's participant and nothing is sent. **Nothing reaches your assistant until you press send yourself.** A new section, "Waiting on your assistance.", appears above "Untangle these first" with a card for describeNumber(): "Sent to your assistant on <date> (round 1). When it says done, press "Measure again"." and the buttons "Measure again" and "Open". This section stays on the panel until the untangling is finished or stopped, even after "Find the tangled methods again" if the method has dropped below the limit. Press send. The governed answer states the target three ways including "It does not mean "reduce by 5"", quotes the method with line numbers, and ends "It will not accept the result on your behalf". Where it proposes a change, the change is shown as a read-only diff with its files named; **UntangleIt does not apply it, you do.**
 
 **C3. On disk.** Open `test\fixtures\tsproject-vitest\.untangleit\runs.json`.
 Expect: one entry, status "sent", before 8, limit 5, your Windows user name, and a snapshot of the file's methods.
@@ -55,7 +55,7 @@ Expect: one entry, status "sent", before 8, limit 5, your Windows user name, and
 **C4. Nothing changed.** Without touching the code, press "Measure again".
 Expect: a progress notification "UntangleIt is running your tests (vitest test)." Then a warning: "Not done. 1 piece: describeNumber() 8. 1 piece is still over your limit of 5. All 4 tests pass. Your call." with "Send another round" and "Stop here". Press "Stop here". The card reads "Stopped on <date> after 1 round. Not done. ...".
 
-**C5. A real untangling.** Press "Untangle it" again and hand the brief to your assistant for real. When it says done, press "Measure again".
+**C5. A real untangling.** Press "Untangle it" again, answer the authorization question, press send in the chat, and apply the change yourself from the diff. When you are done, press "Measure again".
 Expect one of three outcomes, each in plain words: "Untangled into N pieces: ... Every piece is within your limit of 5. All N tests pass." (and, if DeepTest is installed, "Press "Check my code again" in DeepTest ..."); or "Not done. ..." with the pieces and their counts and the two buttons; or "The untangling broke N tests. Behaviour changed, which the brief forbade. Restore the checkpoint, or send it back."
 Record: which outcome, and whether the per-piece numbers matched what the assistant claimed.
 
@@ -81,3 +81,41 @@ Record: the outcome sentence, verbatim, and whether you believed it.
 ## What to send back
 
 For each case: pass, or the exact text on screen. C5 and E2 in full. The findings that matter most are any sentence Jeff would have to ask an engineer to explain.
+
+## E. AI assistance, switched off
+
+**E1. The switch.** In Settings, find "Polyglot: AI assistance" for
+UntangleIt and turn it off. Run "Find the tangled methods".
+Expect: the list and every number are unchanged, and no card offers to
+untangle anything with an assistant. The measurement is not an AI feature
+and does not stop working.
+
+**E2. Nothing is spent while it is off.** With the switch still off, invoke
+UntangleIt's chat participant directly in the chat.
+Expect: one sentence saying Polyglot AI assistance is disabled and telling
+you to enable it in the installed Polyglot extension's settings. Nothing is
+sent, and an authorization you had already given is still there when you
+turn the switch back on.
+
+**E3. Either product's switch stops both.** Turn UntangleIt's back on and
+turn DeepTest's off. Try to untangle a method.
+Expect: UntangleIt offers no AI assistance either.
+
+Turn both back on before continuing.
+
+## F. The Governance History
+
+**F1. What was established.** After at least one governed untangling, run
+the "Governance History" command.
+Expect: a read-only view, one entry per interaction, saying what was
+attempted, under which interaction, what the checks decided, and what
+"Measure again" later established.
+
+**F2. What it does not hold.** Read the entries.
+Expect: no source from your project, no prompt text, no raw model response,
+and no proposal content. If you find any of those, stop and report it.
+
+**F3. The behaviour gate is in the record.** Find an entry for a method you
+measured again.
+Expect: the verdict is one of equivalent, changed, or insufficient, and an
+insufficient verdict names its reason. It is never reported as a pass.

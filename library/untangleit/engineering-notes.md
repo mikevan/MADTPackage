@@ -8,7 +8,7 @@ What was built, what was tried, what failed, and why it is shaped this way. Comp
 
 UntangleIt began as a branch inside DeepTest. DeepTest's "Hardest to test" row got a "Fix this" button on 2026-09-06 with two choices, test every way through the function or break it into smaller pieces, and the second choice was a refactoring brief handed to the assistant. Michael's review: that is an early version of a different tool, and by the toolkit's own rule (one verb per tool) it belongs in its own extension. The first field run settled it: against DeepTest's `visitStatement()` (48 ways through, limit 10), the assistant reduced the count by 10 instead of down to 10. A brief is not a loop. The code was pulled out here and fixed here, not patched in DeepTest.
 
-What moved: the refactor brief (now `src/report/brief.ts`, rewritten to state the target three ways and to carry the pieces still over the limit into later rounds), the gates (checkpoint offer, then modal), and the hand-off. What was written new: the loop with "Measure again", the before-and-after comparison, the run record, and the side panel.
+What moved: the refactor brief (then `src/report/brief.ts`, rewritten to state the target three ways and to carry the pieces still over the limit into later rounds), the gates (checkpoint offer, then modal), and the hand-off. **All three were deleted in 1.0.21**; see "The governed layer, and what it replaced" below. What was written new: the loop with "Measure again", the before-and-after comparison, the run record, and the side panel.
 
 What was copied, not shared: the tree-sitter structure parsers for TypeScript and Python (`src/languages/*/structure.ts`) are byte-for-byte DeepTest's, with the runtime, process, and tree-sitter helpers. The toolkit rule is no shared code between tools, so they are copies, and each tool updates its own. `src/engine/types.ts` came with them and still carries DeepTest's line-level types (depth, routes); UntangleIt uses only `FunctionComplexity`. Trimming that file means editing the parsers, which is deferred until the parsers diverge for a real reason.
 
@@ -40,13 +40,24 @@ Every sentence lives in `src/ui/words.ts`. "Ways through" is the term for cyclom
 
 Every build increments the version and the build stamps it into the panel header (`esbuild.mjs`), for the same reason DeepTest does: two builds under one number once cost an hour.
 
-## The integration harness and the modal
+## The integration harness and the person's answer
 
-The suite cannot press a modal button. The harness sets `UNTANGLEIT_TEST_HOST=1` in the extension host's environment and the gate treats that as "Yes, send it". It is read from the process environment, never from a setting.
+**Historical, and the modal it describes is gone.** Until 1.0.21 the gate in front of a hand-off was a modal dialog, the suite could not press its button, and the harness set `UNTANGLEIT_TEST_HOST=1` in the extension host's environment so the gate treated that as "Yes, send it". It was read from the process environment, never from a setting.
+
+1.0.21 deleted the modal. The authorization question is now asked through the governed layer, one yes authorizes one attempt, and the same environment-variable rule still governs how a harness may stand in for the person's answer: through a process-environment variable set by the harness, never through a setting.
+
+## The governed layer, and what it replaced
+
+The clipboard hand-off and the brief builder are **deleted rather than wrapped**. `src/copilot.ts` and `src/report/brief.ts` are gone, and `src/agent/` carries what replaced them: the registered interactions, the chat participant `prs.untangleit.governed`, the availability check, the kill-switch reader, the pre-fill, the pending authorized attempt and the read-only diff.
+
+The reason for deleting rather than wrapping is the same one that moved this tool out of DeepTest in the first place. A wrapper leaves two paths to a model, and the second one is the one nobody checks. A structural test now asserts zero, not a list of known locations.
+
+What UntangleIt owns and what it does not: it owns the refactor workflow and reads the recordings. Witness owns instrumentation delivery, behaviour recording, and from 1.0.21 the governed interaction machinery, the registry, the validators and the governance store. This tool supplies the directory the record is written into and nothing else about how it is written.
 
 ## Known gaps
 
 - Only the AI engine transforms; the mechanical engine (extract method, guard clauses, dispatch table from the syntax tree) is the next piece of the spec. Measuring is mechanical already.
+- Proposal delivery is diff-only: a validated proposal is rendered and the person applies it. That is an implementation decision with evidence behind it, recorded in the Governed Copilot Contract, and the first one to revisit when a stable review-and-apply API exists.
 - `analyze*Tree` returns DeepTest's full structure; only `.functions` is used. Cost is a little wasted parsing per file.
 - No report panel or Markdown export yet; the run record is the report.
 
@@ -219,3 +230,17 @@ DeepTest's order: Playwright component tests first, then Vitest, Jest,
 and Mocha, with the test script settling a tie. Summaries parsed the same
 way as DeepTest's. Verified on HelloWorlds' node-mocha (10 passing) and
 react-playwright-ct (10 passed) through the runner. One new test; 16.
+
+## The integration suite meets the governed layer (1.0.21)
+
+The release qualification of 2026-09-25 stopped at UntangleIt's `test:vscode`, the first time a release ever ran it. Three things in the suite were stale, and one was hiding behind the other two.
+
+**The tangled set.** The suite expected one tangled method in the fixture, `describeNumber`. complexity 0.1.1 (`8019a06`, 2026-09-11) charges the k-th branch of an if / else-if chain k plus nesting, which moved `classify` from MBCC 5 to 6, one point over the fixture's limit of 5. The expectation predates the rule. Michael ruled the expectation wrong, not the fixture, so the suite now expects both methods and asserts each by name, MBCC, and ways through. It used to print ways through, which does not decide membership, and that is why the first failure looked like an off-by-one when it was not. The run record's `before` is now checked against MBCC, because the old check passed only because both numbers happen to be 8 for `describeNumber`.
+
+**The hand-off.** The suite read the clipboard. Production stopped writing the clipboard when the governed participant replaced that hand-off, so there was nothing to read. A participant cannot be invoked from code and the editor cannot read the chat input back, so the governed hand-off could not be seen from the suite at all. Three options were weighed: a read-only observation in production, a test-only branch, and asserting the refusal only. The test-only branch would prove a path no customer runs, and asserting only the refusal leaves the pre-fill unproven, which is the thing that went stale. The observation won. `peekPendingAttempt()` reads the waiting attempt without taking it and returns its two identifiers only. `prefillChat` remembers the invocation once the editor accepts it. The activation API gains `waitingAttempt()` beside `state` and `run`, not added to the public contract. It was first named `handOff()`, and the release governance gate (row A) refused it, because Phase 5 deleted a local function by that name, the old ungoverned hand-off, and the gate keeps it from returning. The gate judges by identity, not intent, and it was right to: a reader seeing `handOff` in `extension.ts` would assume the deleted path was back. The observer was renamed and the gate was left alone. The suite now asserts the exact invocation, the run it belongs to, and that the attempt is still waiting, which proves nothing was sent, because the participant takes the attempt on send. A unit test pins that the look never spends the attempt and the take still does.
+
+**The gate.** With those two fixed, the suite timed out waiting for a run record. Phase 8's gate refuses every propose action when the editor has no model, and the test editor has no signed-in assistant. The gate was right. The suite was written before it existed and never ran in the release path afterwards.
+
+Experiment E7 (2026-11-02, VS Code 1.144.1, kept at the toolkit root in `_stubmodel-experiments`) measured whether a test-only extension can give the test editor a model. It can. A provider registered through `vscode.lm.registerLanguageModelChatProvider` and contributed under `languageModelChatProviders` was returned by `selectChatModels()` on the first call, under the suite's own `--disable-extensions` launch. Without it the same call returned no models for 15 seconds. Asking for the list called the provider three times, silently, and never called its response handler.
+
+So the suite now runs in two launches. The governed launch loads a stub model from `test/integration/stub-model` beside UntangleIt and walks the whole loop. At the end it checks that the stub's response handler was called zero times; the handler throws if anything ever sends to it. The no-model launch loads UntangleIt alone and checks that the measurement still works and that "Untangle it" writes no run record, puts nothing on disk, and leaves nothing waiting, authorized, or pre-filled. That is the first time the Phase 8 gate has been proven in a real editor. Each launch checks which extensions are actually loaded, so a harness mistake cannot make one launch quietly test the other's case. Production code runs its real gate in both. The stub is never packaged, because `.vscodeignore` excludes `test/**`.
